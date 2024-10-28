@@ -179,7 +179,9 @@ export default function Dashboard() {
     <ProtectedRoute>
       <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
         {/* Sidebar */}
-        <aside className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
+        <aside className={`${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
           <div className="p-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">PromptImage</h2>
           </div>
@@ -231,9 +233,9 @@ export default function Dashboard() {
         </aside>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden lg:pl-64">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <header className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
               <Button variant="ghost" size="icon" className="lg:hidden mr-2" onClick={toggleSidebar}>
                 <Menu className="h-6 w-6" />
@@ -252,7 +254,7 @@ export default function Dashboard() {
           <main className="flex-1 overflow-y-auto p-4">
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl sm:text-3xl font-bold">Your Generated Visuals</h1>
+                <h2 className="text-2xl sm:text-3xl font-bold">Your Generated Visuals</h2>
               </div>
               
               {error && (
@@ -335,12 +337,13 @@ export default function Dashboard() {
                         </CardFooter>
                       </Card>
                     ))}
+                
                   </div>
 
                   {visuals.length === 0 && !isLoading && (
                     <div className="text-center py-12 border-2 border-dashed rounded-lg">
                       <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <h3 className="mt-4  text-lg font-semibold">No visuals yet</h3>
+                      <h3 className="mt-4 text-lg font-semibold">No visuals yet</h3>
                       <p className="mt-2 text-muted-foreground">Get started by generating your first visual</p>
                       <Button
                         className="mt-4"
