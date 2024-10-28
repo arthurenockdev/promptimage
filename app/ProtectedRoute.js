@@ -11,19 +11,30 @@ const ProtectedRoute = ({ children }) => {
   const pathname = usePathname()
   const [loading, setLoading] = useState(true)
   
-  // Define public routes that don't require authentication
-  const publicRoutes = ['/', '/login', '/register']
-
-  // Effect to handle auth state changes and route protection
+  // Define authentication-specific routes
+  const authRoutes = ['/','/login', '/register'] // Routes only for non-authenticated users
+  const protectedRoutes = [
+    '/dashboard',
+    '/generate_visual',
+    // Add any other protected routes here
+  ]
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       try {
-        if (!user && !publicRoutes.includes(pathname)) {
-          // If no user and trying to access protected route, redirect to login
-          router.push('/login')
-        } else if (user && (pathname === '/login' || pathname === '/register')) {
-          // If user is logged in and tries to access login/register, redirect to dashboard
-          router.push('/dashboard')
+        if (user) {
+          // User is logged in
+          if (authRoutes.includes(pathname)) {
+            // Redirect away from login/register pages if authenticated
+            router.push('/dashboard')
+          }
+          // If user is authenticated, they can access both public and protected routes
+        } else {
+          // User is not logged in
+          if (protectedRoutes.some(route => pathname.startsWith(route))) {
+            // If trying to access protected routes without auth, redirect to login
+            router.push('/login')
+          }
         }
       } catch (error) {
         console.error('Authentication error:', error)
