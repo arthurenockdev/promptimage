@@ -23,25 +23,25 @@ const ASPECT_RATIOS = {
 
 export default function GenerateVisual() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const { prompt: urlPrompt, aspectRatio: urlAspectRatio } = router.query || {};
 
   const [prediction, setPrediction] = useState(null);
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [aspectRatio, setAspectRatio] = useState("square");
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState('');
+  const [aspectRatio, setAspectRatio] = useState('square');
 
   useEffect(() => {
-    const urlPrompt = searchParams.get('prompt');
-    const urlAspectRatio = searchParams.get('aspectRatio');
-    
-    if (urlPrompt) setPrompt(decodeURIComponent(urlPrompt));
-    if (urlAspectRatio && ASPECT_RATIOS[urlAspectRatio]) {
-      setAspectRatio(urlAspectRatio);
+    if (router.isReady) {
+      if (urlPrompt) setPrompt(decodeURIComponent(urlPrompt));
+      if (urlAspectRatio && ASPECT_RATIOS[urlAspectRatio]) {
+        setAspectRatio(urlAspectRatio);
+      }
     }
-  }, [searchParams]);
+  }, [router.isReady, urlPrompt, urlAspectRatio]);
+
 
   // Auto-hide notifications after 5 seconds
   useEffect(() => {
