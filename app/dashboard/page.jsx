@@ -172,7 +172,7 @@ export default function Dashboard() {
   };
 
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+    setIsSidebarOpen(prev => !prev);
   };
 
   return (
@@ -182,8 +182,11 @@ export default function Dashboard() {
         <aside className={`${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
-          <div className="p-6">
+          <div className="p-6 flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">PromptImage</h2>
+            <Button variant="ghost" size="icon" className="lg:hidden" onClick={toggleSidebar}>
+              <X className="h-6 w-6" />
+            </Button>
           </div>
           <nav className="flex-1 space-y-2 px-4">
             <Button
@@ -198,7 +201,7 @@ export default function Dashboard() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full flex items-center justify-between">
-                  <div className="flex items-center">
+                  <div className="flex items-center max-w-[calc(100%-24px)]">
                     <Avatar>
                       <AvatarImage src="/placeholder.svg" alt={email} />
                       <AvatarFallback>{email ? email[0].toUpperCase() : ''}</AvatarFallback>
@@ -254,7 +257,7 @@ export default function Dashboard() {
           <main className="flex-1 overflow-y-auto p-4">
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl sm:text-3xl font-bold">Generated Visuals</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold">Your Generated Visuals</h2>
               </div>
               
               {error && (
