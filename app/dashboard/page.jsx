@@ -155,26 +155,54 @@ export default function Dashboard() {
     try {
       setIsLoading(true);
       
-      // Fetch the image
-      const response = await fetch(imageUrl);
-      if (!response.ok) throw new Error('Failed to fetch image');
+      // Add cors headers to the fetch request
+      const response = await fetch(imageUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+        mode: 'cors', // Enable CORS
+      });
       
-      // Convert to blob
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Get the content type from the response
+      const contentType = response.headers.get('content-type');
+      
+      // Ensure we're getting an image
+      if (!contentType || !contentType.includes('image')) {
+        throw new Error('Response is not an image');
+      }
+      
       const blob = await response.blob();
+      
+      // Validate blob size
+      if (blob.size === 0) {
+        throw new Error('Downloaded file is empty');
+      }
       
       // Create object URL
       const blobUrl = window.URL.createObjectURL(blob);
       
-      // Create temporary link and trigger download
-      const link = document.createElement("a");
+      // Extract filename from URL or use timestamp
+      const filename = imageUrl.split('/').pop() || `generated-image-${Date.now()}.png`;
+      
+      // Create and trigger download
+      const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `generated-image-${Date.now()}.png`;
+      link.download = filename;
+      
+      // Append to document, click, and cleanup
       document.body.appendChild(link);
       link.click();
       
-      // Cleanup
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
+      // Cleanup after small delay to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
       
       setNotification({
         type: "success",
@@ -184,13 +212,13 @@ export default function Dashboard() {
       console.error("Download error:", error);
       setNotification({
         type: "error",
-        message: "Failed to download image: " + error.message
+        message: `Failed to download image: ${error.message}`
       });
     } finally {
       setIsLoading(false);
     }
   };
-
+      
   const handleLogout = async () => {
     try {
       await signOut(auth);
