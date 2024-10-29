@@ -19,7 +19,7 @@ const SignUp = () => {
     e.preventDefault()
     try {
       await createUserWithEmailAndPassword(auth, email, password)
-      router.push("/login")
+      router.replace("/login")
     } catch (error) {
       setSignUpError(error.message)
     }

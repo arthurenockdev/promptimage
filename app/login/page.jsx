@@ -22,7 +22,7 @@ const Login = () => {
     setIsLoading(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      router.push("/dashboard") // Navigate to the dashboard
+      router.replace("/dashboard") // Navigate to the dashboard
     } catch (error) {
       
       setLoginError(error.message)

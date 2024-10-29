@@ -162,7 +162,7 @@ export default function Dashboard() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.push("/login");
+      router.replace("/login");
     } catch (error) {
       setNotification({
         type: "error",
@@ -257,7 +257,7 @@ export default function Dashboard() {
           <main className="flex-1 overflow-y-auto p-4">
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl sm:text-3xl font-bold">Your Generated Visuals</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold">Generated Visuals</h2>
               </div>
               
               {error && (
