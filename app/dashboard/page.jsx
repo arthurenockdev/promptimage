@@ -150,13 +150,45 @@ export default function Dashboard() {
     setPreviewDialogOpen(true);
   };
 
-  const handleDownload = (imageUrl) => {
-    const link = document.createElement("a");
-    link.href = imageUrl;
-    link.setAttribute("download", `generated-image-${Date.now()}.png`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  
+  const handleDownload = async (imageUrl) => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch the image
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error('Failed to fetch image');
+      
+      // Convert to blob
+      const blob = await response.blob();
+      
+      // Create object URL
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Create temporary link and trigger download
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `generated-image-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      
+      setNotification({
+        type: "success",
+        message: "Image downloaded successfully"
+      });
+    } catch (error) {
+      console.error("Download error:", error);
+      setNotification({
+        type: "error",
+        message: "Failed to download image: " + error.message
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogout = async () => {

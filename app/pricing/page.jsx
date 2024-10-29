@@ -1,7 +1,7 @@
 'use client'
 import Script from "next/script";
 import { Button } from "@/components/ui/button";
-import { CheckIcon, MenuIcon } from "lucide-react";
+import { CheckIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
@@ -9,24 +9,22 @@ import { collection, addDoc } from "firebase/firestore";
 import db from '../utils/firestore';
 
 export default function PricingPage() {
-  const [isPaddleInitialized, setIsPaddleInitialized] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
-  
+  const [isLoading, setIsLoading] = useState(false);
   
   const plans = [
     {
-      priceId: "pri_01jb3d3fvhk5b43dsxbwbft1nv",
+      planCode: "PLN_pkg2sxau15o8zqe",
       name: "Pro",
       price: "$20/month",
+      amount: 900000, // Amount in kobo (₦9,000)
       description: "",
       features: [
-        "Unlimited AI image generator",
-        "15 style presets",
-        "Advanced editing tools",
+        "Unlimited AI image generations",
+        "Access to all features",
         "Priority email support",
-        
+        "Early access to new features"
       ],
-      
     }
   ];
 
@@ -40,92 +38,93 @@ export default function PricingPage() {
       }
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
- 
-
-  const handlePayment = (priceId) => {
+  const initializePayment = async (plan) => {
     if (!userEmail) {
       console.error('No user email available');
-      // You might want to redirect to login page or show a message
       return;
     }
 
-    if (typeof window !== 'undefined' && window.Paddle && isPaddleInitialized) {
-      window.Paddle.Checkout.open({
-        items: [
-          {
-            priceId: priceId,
-            quantity: 1
-          }
-        ],
-        customer: {
-          email: userEmail
-        },
-      });
-    } else {
-      console.error('Paddle is not initialized');
-    }
-  };
-
-  const savePayment = async (event) => {
-    
-    //
+    setIsLoading(true);
     try {
+      // Initialize transaction
+      const response = await fetch('/api/paystack/initialize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          amount: plan.amount,
+          plan: plan.planCode,
+        }),
+      });
+
+      const data = await response.json();
       
-      // Save to Firestore
-      await addDoc(collection(db, "subscriptions"), {
-        transactionId: event.data.transaction_id,
-        status:event.data.status,
-        card_last4:event.data.payment.method_details.card.last4,
-        card_type:event.data.payment.method_details.card.type,
-        currency_code:event.data.currency_code,
-        country_code:event.data.customer.address.country_code,
-        user_email:event.data.customer.email,
-        startDate: new Date().toISOString(),
-        eventName:event.name
-      });
+      if (data.status) {
+        // Redirect to Paystack checkout
+        window.location.href = data.data.authorization_url;
+      } else {
+        console.error('Payment initialization failed');
+      }
     } catch (error) {
-      console.error('Error saving payment:', error);
+      console.error('Error initializing payment:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const initializePaddle = () => {
-    if (typeof window !== 'undefined' && window.Paddle) {
-      Paddle.Environment.set('sandbox')
-      window.Paddle.Setup({ 
-        token: 'test_6ca47b32335bd216ffdf2d715e8',
-        eventCallback: function(event) {
-          console.log('Paddle event:', event);
-          if (event.name === "checkout.completed") {
-
-            savePayment(event);
-          }
-        }
+  const saveSubscription = async (reference) => {
+    try {
+      // Verify payment on the backend
+      const response = await fetch('/api/paystack/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reference }),
       });
-      setIsPaddleInitialized(true);
+
+      const data = await response.json();
+
+      if (data.status) {
+        // Save subscription to Firestore
+        await addDoc(collection(db, "subscriptions"), {
+          reference: data.data.reference,
+          status: data.data.status,
+          plan: data.data.plan,
+          customer_email: data.data.customer.email,
+          amount: data.data.amount,
+          subscription_code: data.data.subscription_code,
+          startDate: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error saving subscription:', error);
     }
   };
 
-  const handlePaddleLoad = () => {
-    initializePaddle();
-  };
+  // Handle Paystack callback
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const reference = urlParams.get('reference');
+      
+      if (reference) {
+        saveSubscription(reference);
+      }
+    }
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Script 
-        src="https://cdn.paddle.com/paddle/v2/paddle.js"
-        onLoad={handlePaddleLoad}
-        strategy="lazyOnload"
-      />
-      
       <header className="px-4 lg:px-6 h-14 flex items-center">
         <Link className="flex items-center justify-center" href="#">
           <span className="font-bold text-xl">PromptImage</span>
         </Link>
-        
       </header>
 
       <main className="flex-1">
@@ -137,14 +136,14 @@ export default function PricingPage() {
                   All Access Plan
                 </h1>
                 <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                Generate stunning visuals with our AI-powered platform.
+                  Generate stunning visuals with our AI-powered platform.
                 </p>
               </div>
             </div>
 
             <div className="flex justify-center mt-12">
               {plans.map((plan) => (
-                <div key={plan.priceId} className="flex flex-col p-6 bg-white rounded-lg shadow-lg">
+                <div key={plan.planCode} className="flex flex-col p-6 bg-white rounded-lg shadow-lg">
                   <h3 className="text-2xl font-bold">{plan.name}</h3>
                   <div className="mt-4 text-4xl font-bold">{plan.price}</div>
                   <p className="mt-2 text-muted-foreground">{plan.description}</p>
@@ -157,30 +156,31 @@ export default function PricingPage() {
                     ))}
                   </ul>
                   <Button 
-                    onClick={() => handlePayment(plan.priceId)}
+                    onClick={() => initializePayment(plan)}
                     className="mt-6"
-                    disabled={!isPaddleInitialized || !userEmail}
+                    disabled={!userEmail || isLoading}
                   >
                     {!userEmail 
                       ? 'Please Log In to Subscribe' 
-                      : isPaddleInitialized 
-                        ? 'Choose Plan' 
-                        : 'Loading...'}
+                      : isLoading 
+                        ? 'Processing...' 
+                        : 'Subscribe Now'}
                   </Button>
                 </div>
               ))}
             </div>
           </div>
         </section>
-
-
       </main>
 
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">© 2024 PromptImage. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground">© 2024 VisualAI. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-          <Link className="text-xs hover:underline underline-offset-4" href="/terms-of-service">
+          <Link className="text-xs hover:underline underline-offset-4" href="#">
             Terms of Service
+          </Link>
+          <Link className="text-xs hover:underline underline-offset-4" href="#">
+            Privacy Policy
           </Link>
         </nav>
       </footer>
