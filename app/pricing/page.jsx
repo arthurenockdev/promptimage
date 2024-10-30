@@ -16,7 +16,7 @@ export default function PricingPage() {
     {
       planCode: "PLN_pkg2sxau15o8zqe",
       name: "Pro",
-      price: "$20/month",
+      price: "$**/month",
       amount: 900000, // Amount in kobo (₦9,000)
       description: "",
       features: [

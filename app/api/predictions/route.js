@@ -20,14 +20,12 @@ export async function POST(request) {
 
   const options = {
     // Stable Diffusion 3
-    version: "da77bc59ee60423279fd632efb4795ab731d9e3ca9705ef3341091fb989b7eaf",
+    version: "8beff3369e81422112d93b89ca01426147de542cd4684c244b673b105188fe5f",
     input: {
       prompt,
       width,
       height,
-      scheduler: "DPMSolverMultistep",  // SD3's default scheduler
-      num_inference_steps: 25,  // Default value for SD3
-      guidance_scale: 7.5,     // Default value for SD3
+      
     }
   }
 
