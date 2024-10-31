@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { headers } from 'next/headers';
 import { collection, addDoc, updateDoc, query, where, getDocs } from 'firebase/firestore';
-import db from '@/utils/firestore';
+import db from '../utils/firestore';
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 

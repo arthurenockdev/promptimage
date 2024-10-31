@@ -14,7 +14,7 @@ export default function PricingPage() {
   
   const plans = [
     {
-      planCode: "PLN_pkg2sxau15o8zqe",
+      planCode: "PLN_8hwju5bycqnjv95",
       name: "Pro",
       price: "$**/month",
       amount: 900000, // Amount in kobo (₦9,000)
