@@ -4,8 +4,8 @@ import ProtectedRoute from "../ProtectedRoute"
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Sparkles, MoreVertical, Trash2, ImageIcon, Plus, LayoutDashboard, Download, LogOut, Settings, User, X, Menu, ChevronsUpDown } from 'lucide-react';
-import { collection, getDocs, deleteDoc, doc, orderBy, query, where } from 'firebase/firestore';
+import { Sparkles, MoreVertical, Trash2, ImageIcon, Plus, LayoutDashboard, Download, LogOut, Settings, User, X, Menu, ChevronsUpDown, Check } from 'lucide-react';
+import { collection, getDocs, deleteDoc, doc, orderBy, query, where, limit } from 'firebase/firestore';
 import db from '../utils/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,18 +66,49 @@ export default function Dashboard() {
 
   const fetchSubscriptionStatus = async (userEmail) => {
     try {
-      const subscriptionRef = collection(db, "subscriptions");
-      const q = query(subscriptionRef, where("email", "==", userEmail));
+      const paymentsRef = collection(db, "payments");
+      const q = query(
+        paymentsRef, 
+        where("customer.email", "==", userEmail),
+        orderBy("lastUpdated", "desc"),
+        limit(1)
+      );
+      
       const querySnapshot = await getDocs(q);
+      
       if (!querySnapshot.empty) {
-        const subscriptionData = querySnapshot.docs[0].data();
-        setSubscriptionStatus(subscriptionData.status);
+        const latestPayment = querySnapshot.docs[0].data();
+        
+        // Check if payment is successful and within valid period
+        const isValidPayment = latestPayment.status === "success";
+        
+        if (isValidPayment) {
+          // Parse the paidAt date
+          const paidAtDate = new Date(latestPayment.paidAt);
+          const currentDate = new Date();
+          
+          // Calculate if subscription is still valid (e.g., within 30 days)
+          const daysSincePaid = Math.floor((currentDate - paidAtDate) / (1000 * 60 * 60 * 24));
+          const isWithinSubscriptionPeriod = daysSincePaid <= 30; // Adjust period as needed
+          
+          setSubscriptionStatus(isWithinSubscriptionPeriod ? "active" : null);
+          
+          // If subscription has expired, show relevant notification
+          if (!isWithinSubscriptionPeriod) {
+            setNotification({
+              type: "warning",
+              message: "Your subscription has expired. Please renew to continue generating visuals."
+            });
+          }
+        } else {
+          setSubscriptionStatus(null);
+        }
       } else {
         setSubscriptionStatus(null);
       }
     } catch (error) {
-      console.error("Error fetching subscription status:", error);
-      setError("Error fetching subscription status: " + error.message);
+      console.error("Error fetching payment status:", error);
+      setError("Error fetching payment status: " + error.message);
       setSubscriptionStatus(null);
     }
   };
@@ -113,10 +144,16 @@ export default function Dashboard() {
   };
 
   const handleGenerateClick = () => {
-    if (subscriptionStatus === "completed") {
+    const isSubscribed = subscriptionStatus === "active";
+    
+    if (isSubscribed) {
+      setShowSubscriptionDialog(false);
       router.push('/generate_visual');
     } else {
-      setShowSubscriptionDialog(true);
+      // Check if there's a payment record but expired
+      if (subscriptionStatus === null) {
+        setShowSubscriptionDialog(true);
+      }
     }
   };
 
@@ -502,38 +539,62 @@ export default function Dashboard() {
 
         {/* Subscription Alert Dialog */}
         <AlertDialog open={showSubscriptionDialog} onOpenChange={setShowSubscriptionDialog}>
-          <AlertDialogContent className="sm:max-w-[425px] bg-white">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2 text-primary">
-                <ImageIcon className="w-6 h-6" />
-                Upgrade to Generate
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-center pt-4">
-                Unlock the power of AI-generated images by upgrading your account. Create stunning visuals with just a click!
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="flex flex-col items-center justify-center p-4">
-              <Sparkles className="w-16 h-16 text-yellow-400 animate-pulse" />
-              <p className="mt-4 text-sm text-center text-muted-foreground">
-                Join our premium users and enjoy unlimited image generation, priority processing, and exclusive styles.
-              </p>
+      <AlertDialogContent className="sm:max-w-[425px] bg-white">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2 text-primary">
+            <ImageIcon className="w-6 h-6" />
+            {subscriptionStatus === null ? "Subscribe to Generate" : "Renew Subscription"}
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-center pt-4">
+            {subscriptionStatus === null
+              ? "Unlock the power of AI-generated images by subscribing to our service."
+              : "Your subscription has expired. Renew now to continue generating amazing visuals!"}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="flex flex-col items-center justify-center p-4">
+          <Sparkles className="w-16 h-16 text-yellow-400 animate-pulse" />
+          <p className="mt-4 text-sm text-center text-muted-foreground">
+            Get unlimited access to our AI image generation tools for 30 days.
+          </p>
+          {subscriptionStatus !== "active" && (
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <p className="text-sm font-medium">Subscription includes:</p>
+              <ul className="mt-2 text-sm space-y-2">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  Unlimited image generation
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  Early access to new features
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-green-500" />
+                  30 days of access
+                </li>
+              </ul>
             </div>
-            <AlertDialogFooter className="sm:justify-center">
-              <AlertDialogCancel className="sm:w-auto" onClick={() => setShowSubscriptionDialog(false)}>
-                Maybe Later
-              </AlertDialogCancel>
-              <AlertDialogAction
-                className="sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200"
-                onClick={() => {
-                  router.push('/pricing'); 
-                  setShowSubscriptionDialog(false);
-                }}
-              >
-                Subscribe Now
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          )}
+        </div>
+        <AlertDialogFooter className="sm:justify-center">
+          <AlertDialogCancel 
+            className="sm:w-auto" 
+            onClick={() => setShowSubscriptionDialog(false)}
+          >
+            Maybe Later
+          </AlertDialogCancel>
+          <AlertDialogAction
+            className="sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200"
+            onClick={() => {
+              router.push('/pricing');
+              setShowSubscriptionDialog(false);
+            }}
+          >
+            {subscriptionStatus === null ? "Subscribe Now" : "Renew Subscription"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
       </div>
     </ProtectedRoute>
   );

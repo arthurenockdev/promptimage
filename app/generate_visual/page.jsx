@@ -175,21 +175,7 @@ export default function GenerateVisual() {
               {/* Left side - Settings */}
               <div className="w-full lg:w-1/3 space-y-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Aspect Ratio</label>
-                    <Select value={aspectRatio} onValueChange={setAspectRatio}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Aspect Ratio" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(ASPECT_RATIOS).map(([key, value]) => (
-                          <SelectItem key={key} value={key}>
-                            {value.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Prompt</label>
